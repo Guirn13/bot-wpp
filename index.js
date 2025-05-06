@@ -1,16 +1,24 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const { Low, JSONFile } = require('lowdb');
-const cron = require('node-cron');
-const fs = require('fs');
+const low = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
 
-const adapter = new JSONFile('db.json');
-const db = new Low(adapter);
+const adapter = new FileSync('db.json');
+const db = low(adapter);
 
-async function initDB() {
-    await db.read();
-    db.data ||= { usuarios: {} };
-    await db.write();
+function initDB() {
+    db.defaults({ usuarios: {} }).write();
+}
+
+function filtrarGastosDoMes(gastos) {
+    const agora = new Date();
+    const mesAtual = agora.getMonth();
+    const anoAtual = agora.getFullYear();
+
+    return gastos.filter(gasto => {
+        const data = new Date(gasto.data);
+        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+    });
 }
 
 const client = new Client({
@@ -18,7 +26,7 @@ const client = new Client({
 });
 
 client.on('qr', qr => {
-    qrcode.generate(qr, {small: true});
+    qrcode.generate(qr, { small: true });
 });
 
 client.once('ready', () => {
@@ -30,7 +38,6 @@ client.on('message_create', async msg => {
     const userId = msg.from;
     const nome = msg._data.notifyName || msg._data.pushname || "Desconhecido";
 
-    // === REGISTRAR GASTO ===
     if (body.startsWith('gasto:')) {
         const texto = body.slice(6).trim();
         const [categoria, valorStr] = texto.split(' ');
@@ -47,23 +54,20 @@ client.on('message_create', async msg => {
             data: new Date().toISOString()
         };
 
-        if (!db.data.usuarios[userId]) {
-            db.data.usuarios[userId] = {
-                nome,
-                gastos: []
-            };
+        const usuarios = db.get('usuarios');
+
+        if (!usuarios.has(userId).value()) {
+            usuarios.set(userId, { nome, gastos: [] }).write();
         }
 
-        db.data.usuarios[userId].gastos.push(gasto);
-        await db.write();
+        usuarios.get(userId).get('gastos').push(gasto).write();
 
         msg.reply(`✅ Gasto registrado: *${categoria}* - R$${valor.toFixed(2)}`);
         return;
     }
 
-    // === COMANDO RESUMO DO MÊS ===
     if (body === '!resumo') {
-        const userData = db.data.usuarios[userId];
+        const userData = db.get('usuarios').get(userId).value();
 
         if (!userData || !userData.gastos.length) {
             msg.reply('📭 Nenhum gasto registrado ainda.');
@@ -95,19 +99,5 @@ client.on('message_create', async msg => {
     }
 });
 
-
-function filtrarGastosDoMes(gastos) {
-    const agora = new Date();
-    const mesAtual = agora.getMonth();
-    const anoAtual = agora.getFullYear();
-
-    return gastos.filter(gasto => {
-        const data = new Date(gasto.data);
-        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
-    });
-}
-
-(async () => {
-    await initDB();
-    client.initialize();
-})();
+initDB();
+client.initialize();
