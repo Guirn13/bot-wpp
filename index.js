@@ -143,7 +143,7 @@ client.on('message_create', async msg => {
 
     if (body === '!ajuda') {
         const ajuda = `💡 *Comandos disponíveis:*\n\n` +
-            `🔹 *gasto: categoria valor* - Registra um gasto. Exemplo: \`gasto: alimentação 50\`\n\n` +
+            `🔹 *gasto: categoria valor* - Registra um gasto.\n Exemplo: \`gasto: alimentação 50\`\n` +
             `🔹 *!dia* - Mostra o resumo dos gastos do dia 📅\n` +
             `🔹 *!semana* - Mostra o resumo dos gastos da semana 📅\n` +
             `🔹 *!mes* - Mostra o resumo dos gastos do mês 📅\n` +
