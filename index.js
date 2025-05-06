@@ -141,15 +141,17 @@ client.on('message_create', async msg => {
         msg.reply(resposta);
     }
 
-    if(body === '!ajuda') {
+    if (body === '!ajuda') {
         const ajuda = `💡 *Comandos disponíveis:*\n\n` +
-            `- *gasto: categoria valor* - Registra um gasto\n` +
-            `- *!dia* - Mostra o resumo dos gastos do dia\n` +
-            `- *!mes* - Mostra o resumo dos gastos do mês\n` +
-            `- *!semana* - Mostra o resumo dos gastos da semana\n` +
-            `- *!ajuda* - Mostra esta mensagem`;
+            `🔹 *gasto: categoria valor* - Registra um gasto. Exemplo: \`gasto: alimentação 50\`\n\n` +
+            `🔹 *!dia* - Mostra o resumo dos gastos do dia 📅\n` +
+            `🔹 *!semana* - Mostra o resumo dos gastos da semana 📅\n` +
+            `🔹 *!mes* - Mostra o resumo dos gastos do mês 📅\n` +
+            `🔹 *!ajuda* - Exibe esta mensagem de ajuda ⚙️\n\n` +
+            `❓ Caso tenha alguma dúvida, não hesite em perguntar!`;
+    
         msg.reply(ajuda);
-    }
+    }    
 });
 
 initDB(db);
