@@ -137,6 +137,7 @@ client.on('message_create', async msg => {
         for (const gasto of gastosHoje) {
             resposta += `- ${gasto.categoria}: R$${gasto.valor.toFixed(2)}\n`;
         }
+        resposta += `\n💰 *Total:* R$${gastosHoje.reduce((acc, gasto) => acc + gasto.valor, 0).toFixed(2)}`;
 
         msg.reply(resposta);
     }
