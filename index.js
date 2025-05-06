@@ -3,23 +3,10 @@ const qrcode = require('qrcode-terminal');
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 
+const { initDB, filtrarGastosDoMes, filtrarGastosSemanal } = require('./utils');
+
 const adapter = new FileSync('db.json');
 const db = low(adapter);
-
-function initDB() {
-    db.defaults({ usuarios: {} }).write();
-}
-
-function filtrarGastosDoMes(gastos) {
-    const agora = new Date();
-    const mesAtual = agora.getMonth();
-    const anoAtual = agora.getFullYear();
-
-    return gastos.filter(gasto => {
-        const data = new Date(gasto.data);
-        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
-    });
-}
 
 const client = new Client({
     authStrategy: new LocalAuth()
@@ -66,7 +53,7 @@ client.on('message_create', async msg => {
         return;
     }
 
-    if (body === '!resumo') {
+    if (body === '!mes') {
         const userData = db.get('usuarios').get(userId).value();
 
         if (!userData || !userData.gastos.length) {
@@ -97,7 +84,73 @@ client.on('message_create', async msg => {
 
         msg.reply(resposta);
     }
+
+    if (body === '!semana') {
+        const userData = db.get('usuarios').get(userId).value();
+
+        if (!userData || !userData.gastos.length) {
+            msg.reply('📭 Nenhum gasto registrado ainda.');
+            return;
+        }
+
+        const gastosSemana = filtrarGastosSemanal(userData.gastos);
+
+        if (gastosSemana.length === 0) {
+            msg.reply('📭 Nenhum gasto nesta semana.');
+            return;
+        }
+
+        const resumo = {};
+        let total = 0;
+
+        for (const gasto of gastosSemana) {
+            resumo[gasto.categoria] = (resumo[gasto.categoria] || 0) + gasto.valor;
+            total += gasto.valor;
+        }
+
+        let resposta = `📅 *Resumo dos gastos nesta semana*\n\n`;
+        for (const [categoria, valor] of Object.entries(resumo)) {
+            resposta += `- ${categoria}: R$${valor.toFixed(2)}\n`;
+        }
+        resposta += `\n💰 *Total:* R$${total.toFixed(2)}`;
+
+        msg.reply(resposta);
+    }
+
+    if(body === '!dia') {
+        const userData = db.get('usuarios').get(userId).value();
+
+        if (!userData || !userData.gastos.length) {
+            msg.reply('📭 Nenhum gasto registrado ainda.');
+            return;
+        }
+
+        const hoje = new Date().toISOString().split('T')[0];
+        const gastosHoje = userData.gastos.filter(gasto => gasto.data.startsWith(hoje));
+
+        if (gastosHoje.length === 0) {
+            msg.reply('📭 Nenhum gasto registrado hoje.');
+            return;
+        }
+
+        let resposta = `📅 *Resumo dos gastos de hoje*\n\n`;
+        for (const gasto of gastosHoje) {
+            resposta += `- ${gasto.categoria}: R$${gasto.valor.toFixed(2)}\n`;
+        }
+
+        msg.reply(resposta);
+    }
+
+    if(body === '!ajuda') {
+        const ajuda = `💡 *Comandos disponíveis:*\n\n` +
+            `- *gasto: categoria valor* - Registra um gasto\n` +
+            `- *!dia* - Mostra o resumo dos gastos do dia\n` +
+            `- *!mes* - Mostra o resumo dos gastos do mês\n` +
+            `- *!semana* - Mostra o resumo dos gastos da semana\n` +
+            `- *!ajuda* - Mostra esta mensagem`;
+        msg.reply(ajuda);
+    }
 });
 
-initDB();
+initDB(db);
 client.initialize();
