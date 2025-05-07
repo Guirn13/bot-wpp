@@ -16,7 +16,7 @@ Este bot atua como um assistente pessoal de **registro e controle de gastos** di
 ## 🚀 Tecnologias
 
 - JavaScript
-- [whatsapp-web.js](https://github.com/mukulhase/WebWhatsapp-Wrapper)
+- whatsapp-web.js
 - Node.js
 
 ## 📦 Instalação
